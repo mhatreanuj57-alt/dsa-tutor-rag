@@ -9,18 +9,13 @@ from dotenv import load_dotenv
 
 load_dotenv(ROOT / ".env")
 
-from src.llm import answer, get_client, get_model
+from src.llm import answer, chat, get_model
 from src.retrieval import hybrid_search
 
 print(f"model: {get_model()}")
 print("testing connection...")
-client = get_client()
-probe = client.chat.completions.create(
-    model=get_model(),
-    messages=[{"role": "user", "content": "Reply with exactly: OK"}],
-    max_tokens=10,
-)
-print(f"connection: {probe.choices[0].message.content}")
+probe = chat([{"role": "user", "content": "Reply with exactly: OK"}], retries=0)
+print(f"connection: {probe}")
 print()
 
 question = "How does Kruskal's minimum spanning tree algorithm work?"
