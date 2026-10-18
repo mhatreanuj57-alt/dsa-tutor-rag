@@ -1,81 +1,126 @@
-# DSA Tutor RAG
+# DSA Tutor RAG — C++, Python & Java
 
-![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue)
-![License: MIT](https://img.shields.io/badge/License-MIT-green)
-![Author: Anuj Mhatre](https://img.shields.io/badge/Author-Anuj%20Mhatre-purple)
+A study assistant that answers from your own DSA implementations and notes, using
+vector search, BM25, reciprocal rank fusion, and cross-encoder reranking.
 
-## Why We Built This
+- Index .cpp, .py, .java, .md, and .txt learning material.
+- Choose C++, Python, Java, or all languages in the Streamlit interface.
+- Keep separate conversations per language and export them as JSON.
+- Inspect the exact retrieved chunks with matching syntax highlighting.
+- Ask from the CLI with the same language filter.
 
-As a second-year BTech student, I wanted a smarter way to study DSA. Instead of Googling the same algorithms repeatedly, I built a RAG system that answers questions **using my own notes and C++ implementations**. No more context-switching — just ask a question and get grounded answers with citations.
+## Setup
 
-## What It Does
+Use Python 3.10+ and install the existing dependencies:
 
-A **Retrieval-Augmented Generation (RAG)** tutor that ingests your DSA notes (C++, Markdown, text), builds a hybrid search index, and answers questions using an LLM — all grounded in your own content with citations.
+~~~powershell
+Set-Location -LiteralPath 'C:\Users\ADMIN\Projects\dsa-tutor-rag'
+python -m pip install -r requirements.txt
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+~~~
 
-- **Hybrid search**: Vector similarity + BM25 + Reciprocal Rank Fusion
-- **Cross-encoder reranking** for precision
-- **Streamlit chat UI** with source citations
-- **CLI mode** for quick queries
+Set GROQ_API_KEY in .env and keep GROQ_MODEL=openai/gpt-oss-120b. The client uses
+Groq's fixed API endpoint and rejects other model selections before sending a
+request. There is no fallback model. Keep your account on Groq's **Free plan**;
+the same model incurs charges on a paid plan, and the app cannot verify your
+billing tier. Free-plan quotas apply; quota errors stop without automatic retries.
+See [Groq's current limits](https://console.groq.com/docs/rate-limits).
+Restart Streamlit after changing .env so its cached client uses the new key.
+Never commit the key. Indexing and retrieval do not require a chat API
+key. The embedding and reranking models need an initial download and sufficient
+local memory.
 
-## How It Was Built
+## Index the three local collections
 
-| Layer | Tech |
-|-------|------|
-| Embeddings | `sentence-transformers` (all-MiniLM-L6-v2) |
-| Vector Store | ChromaDB |
-| Keyword Search | `rank_bm25` (BM25Okapi) |
-| Reranking | Cross-encoder (ms-marco-MiniLM-L6-v2) |
-| LLM | OpenAI-compatible API (configurable) |
-| UI | Streamlit |
-| Chunking | Custom function-aware splitter for C++ code |
+The source folders remain independent. Ingestion reads the local collections;
+deployment uses a published snapshot of their indexed passages:
 
-**Architecture**: `ingest.py` → chunk → embed → store in ChromaDB. At query time, `hybrid_search()` runs vector + BM25 in parallel, fuses with RRF, reranks, then feeds top-k to the LLM.
+~~~powershell
+python ingest.py --cpp-dir '..\DSA-C--Notes' --python-dir '..\DS with python' --java-dir '..\DS with java'
+~~~
 
-## Quick Start
+You can substitute other paths or index just one language. Each build synchronizes
+the **complete** active corpus: include all three directories when refreshing all
+three languages. Files removed from the supplied corpus, including shortened
+files' obsolete chunks, are removed from the index after successful upserts.
+Source reading and embedding complete before index writes begin. A failed write
+can leave a partially refreshed index; rerun the full ingestion command to finish.
 
-```bash
-# Clone & install
-git clone https://github.com/a18-n03/dsa-tutor-rag.git
-cd dsa-tutor-rag
-pip install -r requirements.txt
+For an existing single mixed corpus, these original commands remain supported:
 
-# Set up API key
-cp .env.example .env
-# Edit .env and add your ZEN_API_KEY
-
-# Ingest your notes (put them in data/notes/)
+~~~powershell
 python ingest.py
+python ingest.py --notes-dir '.\data\notes'
+~~~
 
-# Run the chat UI
-streamlit run app.py
+The --force option remains accepted for compatibility; all builds now perform a
+full synchronization without deleting the collection first. Existing indexes
+should be rebuilt once to attach language metadata.
 
-# Or use CLI
-python tutor.py "How does Kruskal work?"
-```
+Sources are namespaced, for example python/graphs/dijkstra.py and
+java/src/graphs/Dijkstra.java, so similarly named files cannot overwrite each
+other. Documentation in an explicitly selected language folder inherits its
+language. Java's src/ directory is omitted from the topic label, not the citation.
+Generated output, hidden directories, virtual environments, caches, and the
+Python collection verification runner are excluded. Indexing never executes
+source code.
 
-## Project Structure
+## Use the tutor
 
-```
-dsa-tutor-rag/
-├── app.py                  # Streamlit chat UI
-├── tutor.py                # CLI interface
-├── ingest.py               # Index builder
-├── src/
-│   ├── chunking.py         # Code-aware text chunking
-│   ├── retrieval.py        # Hybrid search + reranking
-│   ├── llm.py              # LLM client wrapper
-│   └── eval.py             # RAG evaluation suite
-├── data/notes/             # Your DSA notes go here
-├── test_retrieval.py       # Retrieval test script
-├── test_hybrid.py          # Hybrid search benchmark
-└── test_e2e.py             # End-to-end LLM test
-```
+~~~powershell
+python -m streamlit run app.py
+python tutor.py --language python 'How does binary search work?'
+python tutor.py --language java 'Explain Dijkstra and its restrictions'
+python tutor.py --language cpp 'How does Kruskal work?'
+python tutor.py --stats
+~~~
 
-## Test Results
+Omit --language to search the complete corpus. The language filter applies to both
+vector and lexical candidates. The prompt preserves the source language and
+instructs the model to cite full source paths. Retrieved-file lists identify
+supplied evidence; they are not an independent verification of every generated
+claim. No context returns "This isn't in my notes yet" without calling the model.
 
-```
-Test: Variable 'i' undefined in sidebar rendering loop (app.py:104)
-Status: FIXED — Changed `for h in hits:` to `for i, h in enumerate(hits):`
+## Interface
 
-All source files parse correctly. No syntax errors found.
-```
+The light study workspace uses Google's familiar blue, red, yellow, and green
+palette, Material Outlined icons, suggested questions, and an inspectable source
+panel. The icon font is copied from the user's local material-design-icons
+collection and bundled under its Apache 2.0 license at
+assets/material-icons-LICENSE.txt. No icon CDN is required. Roboto is requested
+from Google Fonts; a sans-serif fallback remains available offline.
+
+Theme settings live in .streamlit/config.toml and layout styles in assets/ui.css.
+Restart Streamlit after changing theme configuration. The UI requires Streamlit
+1.62 or newer. Entrance and hover effects respect reduced-motion preferences.
+This is an independent study project, not a Google product.
+
+## Streamlit hosting
+
+Follow [the deployment guide](docs/streamlit-deploy.md). Select Python 3.13 and
+store GROQ_API_KEY in Community Cloud's Secrets settings. A fresh database
+restores data/index-snapshot.json.gz without rebuilding embeddings or needing
+access to your Windows folders. An existing nonempty index is preserved.
+
+The snapshot contains the indexed learning text and vectors, so it is part of
+the published project. Refresh it after re-ingestion with `python export_index.py`.
+See [snapshot provenance and refresh behavior](data/README.md). Requirements pin
+the tested application packages and select CPU-only PyTorch on Linux. Model
+downloads and memory requirements still apply to the first real question.
+
+## Verification
+
+~~~powershell
+python -m pytest tests/test_multilingual.py
+~~~
+
+The regression suite uses a deterministic test embedder and a real temporary
+Chroma database. It checks language discovery, source identities, metadata
+filtering, safe rebuilds, obsolete-chunk removal, prompts, ingestion arguments,
+and Streamlit conversations without model downloads or paid API calls. This
+verifies integration behavior, not semantic retrieval or answer quality.
+
+The original test_hybrid.py, test_retrieval.py, and test_e2e.py scripts remain
+manual smoke checks. They require a populated index; the end-to-end script also
+requires a working provider key. The src/eval.py judge is an exploratory model
+evaluation, not proof of answer accuracy.
