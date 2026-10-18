@@ -5,5 +5,5 @@ sentence-transformers==6.0.0
 transformers==5.15.0
 openai==2.54.0
 rank_bm25==0.2.2
-python-dotenv==1.2.2
+python-dotenv==1.2.4
 streamlit==1.62.0
