@@ -3,11 +3,22 @@ fileWatcherType = "none"
 
 [theme]
 base = "light"
-primaryColor = "#4F46E5"
-backgroundColor = "#ffffff"
-secondaryBackgroundColor = "#F9FAFB"
-textColor = "#111827"
-font = "sans serif"
+primaryColor = "#1967D2"
+backgroundColor = "#F8FAFD"
+secondaryBackgroundColor = "#EEF2F8"
+textColor = "#202124"
+font = "Roboto:https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap"
+headingFont = "Roboto:https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap"
+baseRadius = "12px"
+buttonRadius = "12px"
+borderColor = "#DADCE0"
+linkColor = "#1967D2"
+showSidebarBorder = false
+
+[theme.sidebar]
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F1F5FB"
+textColor = "#202124"
 
 [browser]
 gatherUsageStats = false
