@@ -1,5 +1,7 @@
 # DSA Tutor RAG — C++, Python & Java
 
+**Live app:** [Open DSA Tutor](https://dsa-tutor-rag.streamlit.app/)
+
 A study assistant that answers from your own DSA implementations and notes, using
 vector search, BM25, reciprocal rank fusion, and cross-encoder reranking.
 
